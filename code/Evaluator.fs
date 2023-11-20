@@ -3,7 +3,7 @@ module Evaluator
 open AST
 open System
 
-(* Represents a variable environment *)
+(* Represents a type environment *)
 type Env = Map<string,Expr>
 
 (* prettyprint
@@ -15,6 +15,7 @@ let rec prettyprint (e: Expr) : string =
     | Num n -> string n
     | EString s -> s
     | Variable v -> "Variable(" + v + ")"
+    | Attribute (key, value) -> "Attribute(key: " + (prettyprint key) + ", value: " + (prettyprint value) + ")"
     | Furniture (name, imagePath)-> "Variable(" + name + ", " + imagePath + ")"
     | Room (attrs, children) ->
         let prettyAttrs = attrs |> List.map prettyprint
@@ -28,15 +29,12 @@ let rec prettyprint (e: Expr) : string =
         let prettyChildren = children |> List.map prettyprint
         let joinedChildren = String.Join(", ", prettyChildren)
         "Room(" + "attrs: " + joinedAttrs + ", children: " + joinedChildren + ")" 
-    | TypeDef (baseType, pars, attrs, children) ->
-        let prettyBaseType = prettyprint baseType
+    | TypeDef (pars, children) ->
         let prettyPars = pars |> List.map prettyprint
         let joinedPars = String.Join(", ", prettyPars)
-        let prettyAttrs = attrs |> List.map prettyprint
-        let joinedAttrs = String.Join(", ", prettyAttrs)
         let prettyChildren = children |> List.map prettyprint
         let joinedChildren = String.Join(", ", prettyChildren)
-        "TypeDef(baseType: " + prettyBaseType + ", pars: " + joinedPars + ", attrs: " + joinedAttrs + ", children: " + joinedChildren + ")" 
+        "TypeDef(pars: " + joinedPars + ", children: " + joinedChildren + ")" 
     | Assignment (lhs, rhs) ->
         "Assignment(" + (prettyprint lhs) + ", " + (prettyprint rhs) + ")"
     | Sequence es ->
@@ -45,15 +43,12 @@ let rec prettyprint (e: Expr) : string =
         "Sequence(" + ss + ")"
 
 (* eval
- *   The Blub interpreter!
+ *   The Blueprint interpreter!
  *   Always takes in an expression and an environment, and
  *   always returns an expression and an updated environment.
  *
- *   Blub does not statically check data types; it does
+ *   Blueprint does not statically check data types; it does
  *   perform dynamic checks in some places.
- *   However, Blub is "closed" under all Blub operations,
- *   meaning that a Blub expression will never return
- *   something that isn't a Blub expression.
  *)
 let rec eval (e: Expr)(env: Env) : Expr * Env =
     match e with
@@ -66,27 +61,38 @@ let rec eval (e: Expr)(env: Env) : Expr * Env =
         else
             printfn "Undefined variable."
             exit 1
+    | Furniture (_, _)-> e, env
+    | Attribute(_, _) ->
+        // type check key and value
+        failwith "not implemented yet."
+        e, env
+    | Room (attrs, children)->
+        // Type check attrs and children
+        failwith "not implemented yet."
+        e, env
+    | Level (attrs, children)->
+        // Type check attrs and children
+        failwith "not implemented yet."
+        e, env
+    | TypeDef (pars, children) -> 
+        // Type check pars, attrs, and children
+        failwith "not implemented yet."
+        e, env
     | Assignment (lhs, rhs) ->
+        match rhs with
+        | TypeDef (_, _) ->
+            ()
+        | _ -> 
+            printfn "Right hand side of an assignment must be a type definition."
+            exit 1
+
         match lhs with
         | Variable v ->
-            let rhsr, env1 = eval rhs env
-            let env2 = env1.Add (v, rhsr)
-            rhsr, env2
+            let envNew = env.Add (v, rhs)
+            rhs, envNew
         | _ ->
             printfn "Left hand side of an assignment must be a variable."
             exit 1
-    | Plus (lhs, rhs) ->
-        let lhsr, env1 = eval lhs env
-        let rhsr, env2 = eval rhs env1
-        match lhsr, rhsr with
-        | Num n1, Num n2 -> Num (n1 + n2), env2
-        | _ ->
-            printfn "Invalid operation. Plus requires numeric operands."
-            exit 1
-    | Print e ->
-        let er, env1 = eval e env
-        printfn "%s" (prettyprint er)
-        er, env1
     | Sequence es ->
         match es with
         | [] ->
@@ -94,6 +100,11 @@ let rec eval (e: Expr)(env: Env) : Expr * Env =
             exit 1
         | [e] -> eval e env
         | e::es2 ->
-            let _, env1 = eval e env
-            let s = Sequence es2
-            eval s env1
+            match e with
+            | Assignment (_, _) ->
+                let _, env1 = eval e env
+                let s = Sequence es2
+                eval s env1
+            | _ ->
+                failwith "Sequence must be of type definition assignments."
+                exit 1
