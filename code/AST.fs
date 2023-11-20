@@ -6,7 +6,7 @@ type Expr =
 | EString of string
 | Variable of string
 | Attribute of key: Expr * value: Expr
-| Furniture of name: string * imagePath: string
+| Furniture of attrs: Expr list
 | Room of attrs: Expr list * children: Expr list
 | Level of attrs: Expr list * children: Expr list
 | TypeDef of pars: Expr list * children: Expr list

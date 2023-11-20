@@ -16,7 +16,10 @@ let rec prettyprint (e: Expr) : string =
     | EString s -> s
     | Variable v -> "Variable(" + v + ")"
     | Attribute (key, value) -> "Attribute(key: " + (prettyprint key) + ", value: " + (prettyprint value) + ")"
-    | Furniture (name, imagePath)-> "Variable(" + name + ", " + imagePath + ")"
+    | Furniture (attrs)-> 
+        let prettyAttrs = attrs |> List.map prettyprint
+        let joinedAttrs = String.Join(", ", prettyAttrs)
+        "Furniture(" + joinedAttrs + ")"
     | Room (attrs, children) ->
         let prettyAttrs = attrs |> List.map prettyprint
         let joinedAttrs = String.Join(", ", prettyAttrs)
@@ -61,7 +64,10 @@ let rec eval (e: Expr)(env: Env) : Expr * Env =
         else
             printfn "Undefined variable."
             exit 1
-    | Furniture (_, _)-> e, env
+    | Furniture (_)-> 
+        // type check attrs
+        failwith "not implemented yet."
+        e, env
     | Attribute(_, _) ->
         // type check key and value
         failwith "not implemented yet."

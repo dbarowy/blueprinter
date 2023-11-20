@@ -39,11 +39,26 @@ let pvar: Parser<Expr> = pseq pletter (pmany0 pvarchar |>> stringify)
                            (fun (c: char, s: string) -> (string c) + s)
                            |>> Variable <!> "pvar"
 
+(* pattribute
+ *   Parses an attribute.
+ *)
+let pattribute: Parser<Expr> = 
+   let pleft = pleft pstring (pchar '=')
+   pseq pleft (pstring <|> pnum) (fun (key, value) -> Attribute(key, value)) <!> "pattribute"
+
+(* pattributes
+ *   Helper parser for list of attributes.
+ *)
+let pattributeAdditional = pright (pstr ",") pattribute
+let pattributes: Parser<Expr> = 
+   let emptyList = Sequence([])
+   (pseq pattribute (pmany1 pattributeAdditional) (fun (attr, attrs) -> Sequence(attr::attrs))) <|> (presult emptyList) <!> "pattributes"
 
 (* pfurniture
  *   Parses a furniture object. Furniture is a tuple of the name and the image path
  *)
-let pfurniture: Parser<char> = pletter <|> pdigit <!> "pvarchar"
+let pfurniture: Parser<Expr> = 
+   pbetween (pstr "Furniture(") pattributes (pstr ")")
 let pvarchar: Parser<char> = pletter <|> pdigit <!> "pvarchar"
 let pvar: Parser<Expr> = pseq pletter (pmany0 pvarchar |>> stringify)
                            (fun (c: char, s: string) -> (string c) + s)

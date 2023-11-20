@@ -1,4 +1,4 @@
-﻿// open Parser
+﻿open Parser
 open Evaluator
 open AST
 open System.IO
@@ -16,19 +16,18 @@ let main argv : int =
 
     (* does the user want parser debugging turned on? *)
     let do_debug = if argv.Length = 2 then true else false
-    let ast = Sequence([Assignment(Variable("x"), TypeDef([], [Room([Attribute(EString("id"), EString("room"))], [])])); Assignment(Variable("y"), TypeDef([], [Room([Attribute(EString("id"), EString("room2"))], [])]))])
-    let expr, env = eval ast Map.empty
-    printfn "%A" env
+    // let ast = Sequence([Assignment(Variable("x"), TypeDef([], [Room([Attribute(EString("id"), EString("room"))], [])])); Assignment(Variable("y"), TypeDef([], [Room([Attribute(EString("id"), EString("room2"))], [])]))])
+    // let expr, env = eval ast Map.empty
+    // printfn "%A" env
     (* try to parse what they gave us *)
-    // let ast_maybe = parse input do_debug
+    let ast_maybe = parse input do_debug
 
-    // (* try to evaluate what we parsed... or not *)
-    // match ast_maybe with
-    // | Some ast ->
-    //     eval ast Map.empty |> ignore
-    //     0
-    // | None     ->
-    //     printfn "Invalid program."
-    //     1
+    (* try to evaluate what we parsed... or not *)
+    match ast_maybe with
+    | Some ast ->
+        eval ast Map.empty |> ignore
+        0
+    | None     ->
+        printfn "Invalid program."
+        1
     
-    0
