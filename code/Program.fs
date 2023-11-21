@@ -25,7 +25,8 @@ let main argv : int =
     (* try to evaluate what we parsed... or not *)
     match ast_maybe with
     | Some ast ->
-        eval ast Map.empty |> ignore
+        let _, env = eval ast Map.empty
+        printfn "%A" env
         0
     | None     ->
         printfn "Invalid program."

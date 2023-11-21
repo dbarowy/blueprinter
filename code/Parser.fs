@@ -6,6 +6,19 @@ open AST
 (* declare expression parser so we can use it recursively *)
 let pexpr,pexprImpl = recparser()
 
+(* my_ws
+ *   Let's consider any non-newline whitespace or
+ *   a comment to be whitespace
+ *)
+let my_ws = (pwsNoNL0 |>> (fun _ -> true))
+
+
+(* pad p
+ *   Parses p, surrounded by optional whitespace.
+ *)
+let pad p = pbetween my_ws p my_ws
+
+
 (* pnum
  *   Parses a number.
  *)
@@ -43,73 +56,84 @@ let pvar: Parser<Expr> = pseq pletter (pmany0 pvarchar |>> stringify)
  *   Parses an attribute.
  *)
 let pattribute: Parser<Expr> = 
-   let pleft = pleft pstring (pchar '=')
-   pseq pleft (pstring <|> pnum) (fun (key, value) -> Attribute(key, value)) <!> "pattribute"
+   let pleft = pleft pvar (pchar '=')
+   pseq pleft (pstring <|> pnum <|> pvar) (fun (key, value) -> Attribute(key, value)) <!> "pattribute"
 
 (* pattributes
  *   Helper parser for list of attributes.
  *)
 let pattributeAdditional = pright (pstr ",") pattribute
-let pattributes: Parser<Expr> = 
-   let emptyList = Sequence([])
-   (pseq pattribute (pmany1 pattributeAdditional) (fun (attr, attrs) -> Sequence(attr::attrs))) <|> (presult emptyList) <!> "pattributes"
+let pattributes: Parser<Expr list> = 
+   let emptyList = []
+   (pseq pattribute (pmany0 pattributeAdditional) (fun (attr, attrs) -> attr::attrs)) <|> (presult emptyList) <!> "pattributes"
 
 (* pfurniture
  *   Parses a furniture object. Furniture is a tuple of the name and the image path
  *)
 let pfurniture: Parser<Expr> = 
-   pbetween (pstr "Furniture(") pattributes (pstr ")")
-let pvarchar: Parser<char> = pletter <|> pdigit <!> "pvarchar"
-let pvar: Parser<Expr> = pseq pletter (pmany0 pvarchar |>> stringify)
-                           (fun (c: char, s: string) -> (string c) + s)
-                           |>> Variable <!> "pvar"
+   (pbetween (pstr "Furniture(") pattributes (pstr ")")) |>> Furniture <!> "pfurniture"
+
+
+(* pchildren
+ *   Helper parser for children objects.
+ *)
+let pchildren: Parser<Expr list> = 
+   (pmany0 (pleft (pexpr) pnl ))  <!> "pchildren"
+
+
+(* proom
+ *   Parses a room object.
+ *)
+let proomInside: Parser<Expr> = 
+   pseq (pleft pattributes (pstr ")[\n")) pchildren (fun (attrs, children) -> Room(attrs, children)) <!> "proomInside"
+let proom: Parser<Expr> = 
+   pbetween (pstr "Room(") proomInside (pstr "]") <!> "proom"
+
+
+(* plevel
+ *   Parses a level object.
+ *)
+let plevelInside: Parser<Expr> = 
+   pseq (pleft pattributes (pstr ")[\n")) pchildren (fun (attrs, children) -> Room(attrs, children)) <!> "plevelInside"
+let plevel: Parser<Expr> = 
+   pbetween (pstr "Level(") plevelInside (pstr "]") <!> "plevel"
+
+
+(* ptypedef
+ *   Parses a level object.
+ *)
+let ppars: Parser<Expr list> = 
+   pmany0 pvar <!> "ppars"
+let ptypedef: Parser<Expr> = 
+   pseq (pbetween (pstr " (") ppars (pstr ")[\n")) (pleft pchildren (pchar ']')) (fun (pars, children) -> TypeDef(pars, children)) <!> "ptypedef"
 
 
 (* passign
  *   Parses an assignment, e.g.,
- *   x := 2
+ *   type MiniGolf (length, width):
+         ...
  *)
-let passign = pseq (pleft (pad pvar) (pad (pstr ":="))) (pad pexpr) Assignment <!> "passign"
-
-(* pplus
- *   Parses an addition operation.  Has no real notion
- *   of precedence or associativity, so watch out!
- *)
-let pplus = pseq (pleft (pad (pnum <|> pvar)) (pad (pchar '+'))) (pad pexpr) Plus <!> "pplus"
-
-(* print
- *   Parses a print expression, e.g.,
- *   print "hi"
- *)
-let pprint = pright (pad (pstr "print ")) pexpr |>> Print <!> "pprint"
-
-(* pparens
- *   Parses an expression surrounded by parens.  Discards
- *   parens entirely (there is no Parens AST type), but it
- *   does force the parser to nest expressions correctly in
- *   some cases.  E.g.,
- *   1 + (x + 1)
- *)
-let pparens = pbetween (pad (pchar '(')) pexpr (pad (pchar ')')) <!> "pparens"
+let pdecleration: Parser<Expr> =
+   pright (pstr "type ") pvar
+let passign = pseq (pdecleration) (ptypedef) Assignment <!> "passign"
 
 (* pexpr
  *   Parses an arbitrary expression.  In general, tries
  *   to parse the most distinguisable/most complex thing
  *   first.
  *)
-pexprImpl := pprint <|> pparens <|> pplus <|> passign <|> pstring <|> pnum <|> pvar <!> "pexpr"
-
+pexprImpl := passign <|> ptypedef <|> plevel <|> proom <|> pfurniture <|> pattribute <|> pvar <|> pstring <|> pnum <!> "pexpr"
 (* pexprs
  *  Parses a sequence of expressions.  Sequences are
  *  delimited by whitespace (usually newlines).
  *)
-let pexprs = pmany1 (pleft (pad pexpr) pws0) |>> Sequence <!> "pexprs"
+let pexprs = pmany1 (pleft pexpr pnl) |>> Sequence <!> "pexprs"
 
 (* grammar
  *  Top level parser definition.  Call this one
  *  if you want a Blub parser.
  *)
-let grammar = pleft pexprs (peof <|> pcomment) <!> "grammar"
+let grammar = pleft pexprs peof <!> "grammar"
 
 (* parse
  *  User-friendly function that calls the Blub parser
