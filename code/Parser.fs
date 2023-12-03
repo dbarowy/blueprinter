@@ -5,18 +5,20 @@ open AST
 
 (* declare expression parser so we can use it recursively *)
 let pexpr,pexprImpl = recparser()
-
-(* my_ws
- *   Let's consider any non-newline whitespace or
- *   a comment to be whitespace
- *)
-let my_ws = (pwsNoNL0 |>> (fun _ -> true))
-
+let proom,proomImpl = recparser()
+let plevel,plevelImpl = recparser()
 
 (* pad p
  *   Parses p, surrounded by optional whitespace.
  *)
-let pad p = pbetween my_ws p my_ws
+let pad p = pbetween pws0 p pws0
+
+
+(* space p1 p2 f
+ *   Parses p1 and p2, with optional whitespace in between.
+ *)
+let space p1 p2 f = 
+   pseq (pleft p1 pws0) p2 f
 
 
 (* pnum
@@ -56,8 +58,8 @@ let pvar: Parser<Expr> = pseq pletter (pmany0 pvarchar |>> stringify)
  *   Parses an attribute.
  *)
 let pattribute: Parser<Expr> = 
-   let pleft = pleft pvar (pchar '=')
-   pseq pleft (pstring <|> pnum <|> pvar) (fun (key, value) -> Attribute(key, value)) <!> "pattribute"
+   let pleft = pleft (pad pstring) (pchar '=')
+   pseq pleft (pad (pstring <|> pnum <|> pvar)) (fun (key, value) -> Attribute(key, value)) <!> "pattribute"
 
 (* pattributes
  *   Helper parser for list of attributes.
@@ -74,38 +76,44 @@ let pfurniture: Parser<Expr> =
    (pbetween (pstr "Furniture(") pattributes (pstr ")")) |>> Furniture <!> "pfurniture"
 
 
-(* pchildren
- *   Helper parser for children objects.
+(* pchildrenRoom
+ *   Helper parser for room children objects.
  *)
-let pchildren: Parser<Expr list> = 
-   (pmany0 (pleft (pexpr) pnl ))  <!> "pchildren"
+let rec pchildrenRoom = 
+   pmany0 (pad (proom <|> pfurniture))  <!> "pchildren"
 
 
 (* proom
  *   Parses a room object.
  *)
-let proomInside: Parser<Expr> = 
-   pseq (pleft pattributes (pstr ")[\n")) pchildren (fun (attrs, children) -> Room(attrs, children)) <!> "proomInside"
-let proom: Parser<Expr> = 
-   pbetween (pstr "Room(") proomInside (pstr "]") <!> "proom"
+proomImpl := 
+   pbetween (pstr "Room(") (pseq (pleft pattributes (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenRoom (fun (attrs, children) -> Room(attrs, children))) (pstr "}") <!> "proom"
 
+
+(* pchildrenLevel
+ *   Helper parser for level children objects.
+ *)
+let rec pchildrenLevel = 
+   pmany0 (pad (plevel <|> proom <|> pfurniture))  <!> "pchildren"
 
 (* plevel
  *   Parses a level object.
  *)
 let plevelInside: Parser<Expr> = 
-   pseq (pleft pattributes (pstr ")[\n")) pchildren (fun (attrs, children) -> Room(attrs, children)) <!> "plevelInside"
-let plevel: Parser<Expr> = 
-   pbetween (pstr "Level(") plevelInside (pstr "]") <!> "plevel"
+   pseq (pleft pattributes (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenLevel (fun (attrs, children) -> Room(attrs, children)) <!> "plevelInside"
+plevelImpl :=
+   pbetween (pstr "Level(") plevelInside (pstr "}") <!> "plevel"
 
 
 (* ptypedef
  *   Parses a level object.
  *)
+let pparAdditional = pright (pstr ",") (pad pvar) <!> "pparAdditional"
 let ppars: Parser<Expr list> = 
-   pmany0 pvar <!> "ppars"
+   let emptyList = []
+   (pseq (pad pvar) (pmany0 pparAdditional) (fun (attr, attrs) -> attr::attrs)) <|> (presult emptyList) <!> "ppars"
 let ptypedef: Parser<Expr> = 
-   pseq (pbetween (pstr " (") ppars (pstr ")[\n")) (pleft pchildren (pchar ']')) (fun (pars, children) -> TypeDef(pars, children)) <!> "ptypedef"
+   pseq (pbetween (pstr "(") ppars (space (pchar ')') (pchar '{') (fun (a, b) -> a))) (pleft pchildrenLevel (pchar '}')) (fun (pars, children) -> TypeDef(pars, children)) <!> "ptypedef"
 
 
 (* passign
@@ -127,7 +135,7 @@ pexprImpl := passign <|> ptypedef <|> plevel <|> proom <|> pfurniture <|> pattri
  *  Parses a sequence of expressions.  Sequences are
  *  delimited by whitespace (usually newlines).
  *)
-let pexprs = pmany1 (pleft pexpr pnl) |>> Sequence <!> "pexprs"
+let pexprs = pmany1 (pad (passign <|> plevel)) |>> Sequence <!> "pexprs" // at the highest level, only type defs and levels can be made
 
 (* grammar
  *  Top level parser definition.  Call this one

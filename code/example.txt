@@ -1,5 +1,0 @@
-type test (id)[
-Room(name=3)[
-Furniture()
-]
-]
