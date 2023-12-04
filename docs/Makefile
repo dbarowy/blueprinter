@@ -1,9 +1,9 @@
 .PHONY: all clean
 
-all: spec.pdf
+all: specification.pdf
 
-spec.pdf: spec.tex
-	pdflatex spec.tex
+specification.pdf: specification.tex
+	pdflatex specification.tex
 
 clean:
 	@rm -f *.out *.log *.bbl *.aux
