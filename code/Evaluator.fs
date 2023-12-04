@@ -45,22 +45,24 @@ let rec prettyprint (e: Expr) : string =
         let ss = String.Join(", ", ps)
         "Sequence(" + ss + ")"
 
-(* eval
+
+
+(* evalExpr
  *   The Blueprint interpreter!
- *   Always takes in an expression and an environment, and
- *   always returns an expression and an updated environment.
+ *   Always takes in an expression and an environment, returns a string tuple
+ *   of <filename>, <svg string>, <env>
  *
  *   Blueprint does not statically check data types; it does
  *   perform dynamic checks in some places.
  *)
-let rec eval (e: Expr)(env: Env) : Expr * Env =
+let rec eval (e: Expr)(env: Env) : string option * Env =
     match e with
-    | Num _ -> e, env
-    | EString _ -> e, env
+    | Num x -> Some (string x), env
+    | EString x -> Some (x), env
     | Variable v ->
         if Map.containsKey v env then
             let value = env[v]
-            value, env
+            eval value env
         else
             printfn "Undefined variable."
             exit 1
@@ -79,7 +81,7 @@ let rec eval (e: Expr)(env: Env) : Expr * Env =
     | Level (attrs, children)->
         // Type check attrs and children
         failwith "not implemented yet."
-        e, env
+        None, env
     | TypeDef (pars, children) -> 
         // Type check pars, attrs, and children
         failwith "not implemented yet."
@@ -95,22 +97,40 @@ let rec eval (e: Expr)(env: Env) : Expr * Env =
         match lhs with
         | Variable v ->
             let envNew = env.Add (v, rhs)
-            rhs, envNew
+            None, envNew
         | _ ->
             printfn "Left hand side of an assignment must be a variable."
             exit 1
     | Sequence es ->
-        match es with
-        | [] ->
-            printfn "Empty sequence not allowed."
-            exit 1
-        | [e] -> eval e env
-        | e::es2 ->
-            match e with
-            | Assignment (_, _) ->
-                let _, env1 = eval e env
-                let s = Sequence es2
-                eval s env1
-            | _ ->
-                failwith "Sequence must be of type definition assignments."
+        failwith "Should not reach here. Sequences can't be nested."
+        exit 1
+
+
+
+(* evalBlueprint
+ *   The Blueprint interpreter!
+ *   Always takes in an expression and an environment, returns nothing,
+ *   and generates the SVG images
+ *
+ *   Blueprint does not statically check data types; it does
+ *   perform dynamic checks in some places.
+ *)
+let rec evalBlueprint (e: Expr)(env: Env) : unit =
+    match e with
+    | Sequence es ->
+        List.map (fun x -> 
+            let filepath, svgStr = evalExpr e env
+            match filepath with
+            | Some path -> 
+                use file = IO.File.CreateText(path)
+                file.Write(svgStr)
+                0
+            | None ->
+                failwith "error generating SVG. This should not be hit."
                 exit 1
+        ) es |> ignore
+
+
+    | _ ->
+        failwith "Sequence must be of Levels or Type Definitions."
+        exit 1

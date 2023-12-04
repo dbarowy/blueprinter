@@ -25,8 +25,9 @@ let main argv : int =
     (* try to evaluate what we parsed... or not *)
     match ast_maybe with
     | Some ast ->
-        let _, env = eval ast Map.empty
+        let _, env = evalBlueprint ast Map.empty
         printfn "%A" env
+        printfn "SVG images generated!"
         0
     | None     ->
         printfn "Invalid program."
