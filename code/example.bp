@@ -1,11 +1,3 @@
-type test( id , name)
-{
-Room("name" = 3, "id" = 0) {
-    Furniture()
-}
-Room("name" = 3, "id" = 0) {
-    Room("name" = 3, "id" = 0) {
-    Furniture()
-}
-}
+Level("name" = "main_floor", "num" = 0, "width" = 400, "height" = 110) {
+    Furniture("name" = "couch", x = 0, y = 0)
 }
