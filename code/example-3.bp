@@ -4,4 +4,4 @@ type CommonFloor( height , width) {
     }
 }
 
-CommonFloor(110, 400)
+CommonFloor(110, 400) {}
