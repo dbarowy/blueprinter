@@ -5,8 +5,6 @@ open AST
 
 (* declare expression parser so we can use it recursively *)
 let pexpr,pexprImpl = recparser()
-let proom,proomImpl = recparser()
-let plevel,plevelImpl = recparser()
 
 (* pad p
  *   Parses p, surrounded by optional whitespace.
@@ -80,13 +78,13 @@ let pfurniture: Parser<Expr> =
  *   Helper parser for room children objects.
  *)
 let rec pchildrenRoom = 
-   pmany0 (pad (proom <|> pfurniture))  <!> "pchildren"
+   pmany0 (pad pexpr)  <!> "pchildren"
 
 
 (* proom
  *   Parses a room object.
  *)
-proomImpl := 
+let proom = 
    pbetween (pstr "Room(") (pseq (pleft pattributes (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenRoom (fun (attrs, children) -> Room(attrs, children))) (pstr "}") <!> "proom"
 
 
@@ -94,14 +92,14 @@ proomImpl :=
  *   Helper parser for level children objects.
  *)
 let rec pchildrenLevel = 
-   pmany0 (pad (plevel <|> proom <|> pfurniture))  <!> "pchildren"
+   pmany0 (pad pexpr )  <!> "pchildren"
 
 (* plevel
  *   Parses a level object.
  *)
 let plevelInside: Parser<Expr> = 
    pseq (pleft pattributes (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenLevel (fun (attrs, children) -> Room(attrs, children)) <!> "plevelInside"
-plevelImpl :=
+let plevel =
    pbetween (pstr "Level(") plevelInside (pstr "}") <!> "plevel"
 
 
@@ -113,7 +111,7 @@ let ppars: Parser<Expr list> =
    let emptyList = []
    (pseq (pad pvar) (pmany0 pparAdditional) (fun (attr, attrs) -> attr::attrs)) <|> (presult emptyList) <!> "ppars"
 let ptypedef: Parser<Expr> = 
-   pseq (pbetween (pstr "(") ppars (space (pchar ')') (pchar '{') (fun (a, b) -> a))) (pleft pchildrenLevel (pchar '}')) (fun (pars, children) -> TypeDef(pars, children)) <!> "ptypedef"
+   pseq pvar (pseq (pbetween (pstr "(") ppars (space (pchar ')') (pchar '{') (fun (a, b) -> a))) (pleft pchildrenLevel (pchar '}')) (fun (pars, children) -> pars, children)) (fun (var , (pars, children)) -> TypeDef(var, pars, children)) <!> "ptypedef"
 
 
 (* passign
@@ -121,9 +119,7 @@ let ptypedef: Parser<Expr> =
  *   type MiniGolf (length, width):
          ...
  *)
-let pdecleration: Parser<Expr> =
-   pright (pstr "type ") pvar
-let passign = pseq (pdecleration) (ptypedef) Assignment <!> "passign"
+let passign = pright (pstr "type ") ptypedef |>> Assignment <!> "passign"
 
 (* pexpr
  *   Parses an arbitrary expression.  In general, tries
@@ -135,7 +131,7 @@ pexprImpl := passign <|> ptypedef <|> plevel <|> proom <|> pfurniture <|> pattri
  *  Parses a sequence of expressions.  Sequences are
  *  delimited by whitespace (usually newlines).
  *)
-let pexprs = pmany1 (pad (passign <|> plevel)) |>> Sequence <!> "pexprs" // at the highest level, only type defs and levels can be made
+let pexprs = pmany1 (pad (passign <|> ptypedef <|> plevel)) |>> Sequence <!> "pexprs" // at the highest level, only type defs and levels and type instances can be made
 
 (* grammar
  *  Top level parser definition.  Call this one
