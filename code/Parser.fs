@@ -110,28 +110,37 @@ let pparAdditional = pright (pstr ",") (pad pvar) <!> "pparAdditional"
 let ppars: Parser<Expr list> = 
    let emptyList = []
    (pseq (pad pvar) (pmany0 pparAdditional) (fun (attr, attrs) -> attr::attrs)) <|> (presult emptyList) <!> "ppars"
-let ptypedef: Parser<Expr> = 
-   pseq pvar (pseq (pbetween (pstr "(") ppars (space (pchar ')') (pchar '{') (fun (a, b) -> a))) (pleft pchildrenLevel (pchar '}')) (fun (pars, children) -> pars, children)) (fun (var , (pars, children)) -> TypeDef(var, pars, children)) <!> "ptypedef"
+let ptypedef: Parser<Expr> =
+   pseq (pbetween (pstr "(") ppars (space (pchar ')') (pchar '{') (fun (a, b) -> a))) (pleft pchildrenLevel (pchar '}')) (fun (pars, children) -> TypeDef(pars, children)) <!> "ptypedef"
 
+
+(* pinstance
+ *   Parses an instance, e.g.,
+ *   MiniGolf (length, width){...}
+ *)
+ let pinstance = 
+      pseq pvar (pseq (pbetween (pstr "(") ppars (space (pchar ')') (pchar '{') (fun (a, b) -> a))) (pleft pchildrenLevel (pchar '}')) (fun (pars, children) -> pars, children)) (fun (var , (pars, children)) -> TypeInstance(var, pars, children)) <!> "pinstance"
 
 (* passign
  *   Parses an assignment, e.g.,
  *   type MiniGolf (length, width):
          ...
  *)
-let passign = pright (pstr "type ") ptypedef |>> Assignment <!> "passign"
+let pdecleration: Parser<Expr> =
+   pright (pstr "type ") pvar
+let passign = pseq (pdecleration) (ptypedef) Assignment <!> "passign"
 
 (* pexpr
  *   Parses an arbitrary expression.  In general, tries
  *   to parse the most distinguisable/most complex thing
  *   first.
  *)
-pexprImpl := passign <|> ptypedef <|> plevel <|> proom <|> pfurniture <|> pattribute <|> pvar <|> pstring <|> pnum <!> "pexpr"
+pexprImpl := passign <|> pinstance <|> plevel <|> proom <|> pfurniture <|> pattribute <|> pvar <|> pstring <|> pnum <!> "pexpr"
 (* pexprs
  *  Parses a sequence of expressions.  Sequences are
  *  delimited by whitespace (usually newlines).
  *)
-let pexprs = pmany1 (pad (passign <|> ptypedef <|> plevel)) |>> Sequence <!> "pexprs" // at the highest level, only type defs and levels and type instances can be made
+let pexprs = pmany1 (pad (passign <|> pinstance <|> plevel)) |>> Sequence <!> "pexprs" // at the highest level, only type defs and levels and type instances can be made
 
 (* grammar
  *  Top level parser definition.  Call this one
