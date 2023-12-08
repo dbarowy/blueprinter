@@ -110,15 +110,14 @@ let pparAdditional = pright (pstr ",") (pad pvar) <!> "pparAdditional"
 let ppars: Parser<Expr list> = 
    let emptyList = []
    (pseq (pad pvar) (pmany0 pparAdditional) (fun (attr, attrs) -> attr::attrs)) <|> (presult emptyList) <!> "ppars"
-let ptypedef: Parser<Expr> =
+let ptypedef: Parser<Expr> = 
    pseq (pbetween (pstr "(") ppars (space (pchar ')') (pchar '{') (fun (a, b) -> a))) (pleft pchildrenLevel (pchar '}')) (fun (pars, children) -> TypeDef(pars, children)) <!> "ptypedef"
-
 
 (* pinstance
  *   Parses an instance, e.g.,
  *   MiniGolf (length, width){...}
  *)
- let pinstance = 
+let pinstance = 
       pseq pvar (pseq (pbetween (pstr "(") ppars (space (pchar ')') (pchar '{') (fun (a, b) -> a))) (pleft pchildrenLevel (pchar '}')) (fun (pars, children) -> pars, children)) (fun (var , (pars, children)) -> TypeInstance(var, pars, children)) <!> "pinstance"
 
 (* passign

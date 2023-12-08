@@ -9,7 +9,9 @@ type Expr =
 | Furniture of attrs: Expr list
 | Room of attrs: Expr list * children: Expr list
 | Level of attrs: Expr list * children: Expr list
-| TypeDef of pars: Expr list * children: Expr list
+| TypeDef of TypeDef
 | TypeInstance of var: Expr * pars: Expr list * children: Expr list
 | Assignment of Expr * Expr
 | Sequence of Expr list
+
+and TypeDef = Expr list * Expr list
