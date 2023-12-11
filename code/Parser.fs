@@ -52,26 +52,26 @@ let pvar: Parser<Expr> = pseq pletter (pmany0 pvarchar |>> stringify)
                            (fun (c: char, s: string) -> (string c) + s)
                            |>> Variable <!> "pvar"
 
-(* pattribute
- *   Parses an attribute.
+(* pproperty
+ *   Parses an property of an object.
  *)
-let pattribute: Parser<Expr> = 
+let pproperty: Parser<Expr> = 
    let pleft = pleft (pad pstring) (pchar '=')
-   pseq pleft (pad (pstring <|> pnum <|> pvar)) (fun (key, value) -> Attribute(key, value)) <!> "pattribute"
+   pseq pleft (pad (pstring <|> pnum <|> pvar)) (fun (key, value) -> Property(key, value)) <!> "pproperty"
 
-(* pattributes
- *   Helper parser for list of attributes.
+(* pproperties
+ *   Helper parser for list of properties.
  *)
-let pattributeAdditional = pright (pstr ",") pattribute
-let pattributes: Parser<Expr list> = 
+let ppropertyAdditional = pright (pstr ",") pproperty
+let pproperties: Parser<Expr list> = 
    let emptyList = []
-   (pseq pattribute (pmany0 pattributeAdditional) (fun (attr, attrs) -> attr::attrs)) <|> (presult emptyList) <!> "pattributes"
+   (pseq pproperty (pmany0 ppropertyAdditional) (fun (attr, attrs) -> attr::attrs)) <|> (presult emptyList) <!> "pproperties"
 
 (* pfurniture
  *   Parses a furniture object. Furniture is a tuple of the name and the image path
  *)
 let pfurniture: Parser<Expr> = 
-   (pbetween (pstr "Furniture(") pattributes (pstr ")")) |>> Furniture <!> "pfurniture"
+   (pbetween (pstr "Furniture(") pproperties (pstr ")")) |>> Furniture <!> "pfurniture"
 
 
 (* pchildrenRoom
@@ -85,7 +85,7 @@ let rec pchildrenRoom =
  *   Parses a room object.
  *)
 let proom = 
-   pbetween (pstr "Room(") (pseq (pleft pattributes (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenRoom (fun (attrs, children) -> Room(attrs, children))) (pstr "}") <!> "proom"
+   pbetween (pstr "Room(") (pseq (pleft pproperties (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenRoom (fun (attrs, children) -> Room(attrs, children))) (pstr "}") <!> "proom"
 
 
 (* pchildrenLevel
@@ -98,7 +98,7 @@ let rec pchildrenLevel =
  *   Parses a level object.
  *)
 let plevelInside: Parser<Expr> = 
-   pseq (pleft pattributes (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenLevel (fun (attrs, children) -> Room(attrs, children)) <!> "plevelInside"
+   pseq (pleft pproperties (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenLevel (fun (attrs, children) -> Room(attrs, children)) <!> "plevelInside"
 let plevel =
    pbetween (pstr "Level(") plevelInside (pstr "}") <!> "plevel"
 
@@ -118,7 +118,7 @@ let ptypedef: Parser<Expr> =
  *   MiniGolf (length, width){...}
  *)
 let pinstance = 
-      pseq pvar (pseq (pbetween (pstr "(") ppars (space (pchar ')') (pchar '{') (fun (a, b) -> a))) (pleft pchildrenLevel (pchar '}')) (fun (pars, children) -> pars, children)) (fun (var , (pars, children)) -> TypeInstance(var, pars, children)) <!> "pinstance"
+      pseq pvar (pbetween (pstr "(") ppars (pchar ')')) (fun (var, children) -> TypeInstance(var, children)) <!> "pinstance"
 
 (* passign
  *   Parses an assignment, e.g.,
@@ -134,7 +134,7 @@ let passign = pseq (pdecleration) (ptypedef) Assignment <!> "passign"
  *   to parse the most distinguisable/most complex thing
  *   first.
  *)
-pexprImpl := passign <|> pinstance <|> plevel <|> proom <|> pfurniture <|> pattribute <|> pvar <|> pstring <|> pnum <!> "pexpr"
+pexprImpl := passign <|> pinstance <|> plevel <|> proom <|> pfurniture <|> pproperty <|> pvar <|> pstring <|> pnum <!> "pexpr"
 (* pexprs
  *  Parses a sequence of expressions.  Sequences are
  *  delimited by whitespace (usually newlines).

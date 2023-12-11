@@ -25,8 +25,8 @@ let main argv : int =
     (* try to evaluate what we parsed... or not *)
     match ast_maybe with
     | Some ast ->
-        let _, env = eval ast Map.empty
-        printfn "%A" env
+        let subsituted_expr, _ = subsituteTypeDefs ast Map.empty
+        printfn "%A" subsituted_expr
         printfn "SVG images generated!"
         0
     | None     ->
