@@ -16,18 +16,21 @@ let main argv : int =
 
     (* does the user want parser debugging turned on? *)
     let do_debug = if argv.Length = 2 then true else false
-    // let ast = Sequence([Assignment(Variable("x"), TypeDef([], [Room([Attribute(EString("id"), EString("room"))], [])])); Assignment(Variable("y"), TypeDef([], [Room([Attribute(EString("id"), EString("room2"))], [])]))])
-    // let expr, env = eval ast Map.empty
-    // printfn "%A" env
+
     (* try to parse what they gave us *)
     let ast_maybe = parse input do_debug
 
     (* try to evaluate what we parsed... or not *)
     match ast_maybe with
     | Some ast ->
-        let subsituted_expr, _ = subsituteTypeDefs ast Map.empty
-        printfn "%A" subsituted_expr
-        printfn "SVG images generated!"
+        printfn "Old AST: %A" ast
+        try
+            let subsituted_expr, _ = expandTypeInstances ast Map.empty
+            printfn "\n\nNew AST: %A" subsituted_expr
+            printfn "SVG images generated!"
+        with
+        | ex ->
+            printfn "Caught exception: %s" ex.Message
         0
     | None     ->
         printfn "Invalid program."

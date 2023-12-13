@@ -1,13 +1,13 @@
-type test( id , name)
-{
-Level("name" = 3, "id" = 0) {
-    Furniture()
-}
-Room("name" = 3, "id" = 0) {
-    Room("name" = 3, "id" = 0) {
-    Furniture()
-}
-}
+type test2(id) {
+    Furniture("id" = id)
 }
 
-test(){}
+type test( id , name) {
+    Room("name" = name, "id" = id) {
+        test2(id)
+    }
+}
+
+Level("name" = 3, "id" = id) {
+    test(1, "ben")
+}

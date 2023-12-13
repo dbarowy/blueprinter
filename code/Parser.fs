@@ -35,7 +35,7 @@ let pnum: Parser<Expr> = pmany1 pdigit
  *   contain double quotes.
  *)
 let pnotquot: Parser<char> = psat (fun c -> c <> '"') <!> "pnotquot"
-let pstring: Parser<Expr> = pbetween (pchar '"') (pmany1 pnotquot) (pchar '"')
+let pstring: Parser<Expr> = (pbetween (pchar '"') (pmany1 pnotquot) (pchar '"'))
                             |>> (fun cs ->
                                    let s = stringify cs
                                    let e = EString s
@@ -55,23 +55,38 @@ let pvar: Parser<Expr> = pseq pletter (pmany0 pvarchar |>> stringify)
 (* pproperty
  *   Parses an property of an object.
  *)
+let px: Parser<Expr> = 
+   let pleft = pleft (pad (pstr "\"x\"")) (pchar '=')
+   pseq pleft (pad pnum) (fun (key, value) -> Property(EString(key), value)) <!> "pproperty"
+
+let py: Parser<Expr> = 
+   let pleft = pleft (pad (pstr "\"y\"")) (pchar '=')
+   pseq pleft (pad pnum) (fun (key, value) -> Property(EString(key), value)) <!> "pproperty"
+
 let pproperty: Parser<Expr> = 
    let pleft = pleft (pad pstring) (pchar '=')
    pseq pleft (pad (pstring <|> pnum <|> pvar)) (fun (key, value) -> Property(key, value)) <!> "pproperty"
 
-(* pproperties
+(* ppropertiesLevel
  *   Helper parser for list of properties.
  *)
 let ppropertyAdditional = pright (pstr ",") pproperty
-let pproperties: Parser<Expr list> = 
-   let emptyList = []
-   (pseq pproperty (pmany0 ppropertyAdditional) (fun (attr, attrs) -> attr::attrs)) <|> (presult emptyList) <!> "pproperties"
+let ppropertiesLevel: Parser<Expr list> = 
+   (pseq pproperty (pmany0 ppropertyAdditional) (fun (attr, attrs) -> attr::attrs)) <!> "pproperties"
+
+
+(* ppropertiesRoomAndFur
+ *   Helper parser for list of properties for rooms and furniture.
+ *)
+let ppropertiesRoomAndFur: Parser<Expr list> = 
+   (pseq (pleft px (pchar ',')) (pseq py (pmany0 ppropertyAdditional) (fun (yattr,attrs) -> yattr::attrs)) (fun (xattr, attrs) -> xattr::attrs)) <!> "pproperties"
+
 
 (* pfurniture
  *   Parses a furniture object. Furniture is a tuple of the name and the image path
  *)
 let pfurniture: Parser<Expr> = 
-   (pbetween (pstr "Furniture(") pproperties (pstr ")")) |>> Furniture <!> "pfurniture"
+   (pbetween (pstr "Furniture(") ppropertiesRoomAndFur (pstr ")")) |>> Furniture <!> "pfurniture"
 
 
 (* pchildrenRoom
@@ -85,7 +100,7 @@ let rec pchildrenRoom =
  *   Parses a room object.
  *)
 let proom = 
-   pbetween (pstr "Room(") (pseq (pleft pproperties (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenRoom (fun (attrs, children) -> Room(attrs, children))) (pstr "}") <!> "proom"
+   pbetween (pstr "Room(") (pseq (pleft ppropertiesRoomAndFur (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenRoom (fun (attrs, children) -> Room(attrs, children))) (pstr "}") <!> "proom"
 
 
 (* pchildrenLevel
@@ -98,7 +113,7 @@ let rec pchildrenLevel =
  *   Parses a level object.
  *)
 let plevelInside: Parser<Expr> = 
-   pseq (pleft pproperties (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenLevel (fun (attrs, children) -> Room(attrs, children)) <!> "plevelInside"
+   pseq (pleft ppropertiesLevel (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenLevel (fun (attrs, children) -> Level(attrs, children)) <!> "plevelInside"
 let plevel =
    pbetween (pstr "Level(") plevelInside (pstr "}") <!> "plevel"
 
@@ -117,8 +132,12 @@ let ptypedef: Parser<Expr> =
  *   Parses an instance, e.g.,
  *   MiniGolf (length, width){...}
  *)
+let pargAdditional = pright (pstr ",") (pad (pstring <|> pnum <|> pvar)) <!> "pargAdditional"
+let pargs: Parser<Expr list> = 
+   let emptyList = []
+   (pseq (pad (pstring <|> pnum <|> pvar)) (pmany0 pargAdditional) (fun (attr, attrs) -> attr::attrs)) <|> (presult emptyList) <!> "pargs"
 let pinstance = 
-      pseq pvar (pbetween (pstr "(") ppars (pchar ')')) (fun (var, children) -> TypeInstance(var, children)) <!> "pinstance"
+      pseq pvar (pbetween (pstr "(") pargs (pchar ')')) (fun (var, children) -> TypeInstance(var, children)) <!> "pinstance"
 
 (* passign
  *   Parses an assignment, e.g.,
@@ -134,7 +153,7 @@ let passign = pseq (pdecleration) (ptypedef) Assignment <!> "passign"
  *   to parse the most distinguisable/most complex thing
  *   first.
  *)
-pexprImpl := passign <|> pinstance <|> plevel <|> proom <|> pfurniture <|> pproperty <|> pvar <|> pstring <|> pnum <!> "pexpr"
+pexprImpl := passign <|> plevel <|> proom <|> pfurniture <|> pinstance <|> pproperty <|> pvar <|> pstring <|> pnum <!> "pexpr"
 (* pexprs
  *  Parses a sequence of expressions.  Sequences are
  *  delimited by whitespace (usually newlines).

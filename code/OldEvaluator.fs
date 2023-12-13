@@ -55,7 +55,7 @@ let rec prettyprint (e: Expr) : string =
 (* getArgsMap
  *   get map of parameters to arguments
  *)
-let rec getArgsPairs (pars: Expr list)(args: Expr list) = 
+let rec getArgsEnv (pars: Expr list)(args: Expr list) = 
     match pars with 
     | [] -> 
         match args with
@@ -68,7 +68,7 @@ let rec getArgsPairs (pars: Expr list)(args: Expr list) =
         | [] ->
             failwith "Incorrect number of arguments specified."
             exit 1
-        | A::As -> (x, A)::(getArgsPairs Ps As)
+        | A::As -> (x, A)::(getArgsEnv Ps As)
     | _ ->
         failwith "parameter must be variable."
         exit 11
@@ -78,41 +78,54 @@ let rec getArgsPairs (pars: Expr list)(args: Expr list) =
 (* subsituteArgsHelper
  *   Recursively replaces all type def instances with the type def constructor and correct arguments and children objects
  *)
-let rec subsituteArgsHelper (expr: Expr)(env: Args) : Expr =
+let rec subsituteArgs (expr: Expr)(args: Args)(env: Env) : Expr =
     match expr with
     | Num(_) -> expr
     | EString(_) -> expr
     | Variable(v) -> 
-        if Map.containsKey v env then
-            let value = env[v]
+        if Map.containsKey v args then
+            let value = args[v]
             value
         else
             printfn "Undefined parameter."
             exit 1
     | Property(key, value) ->
-        Property((subsituteArgsHelper key env), (subsituteArgsHelper value env))
+        Property((subsituteArgs key args env), (subsituteArgs value args env))
     | Furniture(attrs) ->
-        Furniture(List.map (fun attr -> subsituteArgsHelper attr env) attrs)
+        Furniture(List.map (fun attr -> subsituteArgs attr args env) attrs)
     | Room(attrs, children) ->
-        let newAttrs = List.map (fun attr -> subsituteArgsHelper attr env) attrs
-        let newChildren = List.map (fun child -> subsituteArgsHelper child env) children
+        let newAttrs = List.map (fun attr -> subsituteArgs attr args env) attrs
+        let newChildren = (List.fold (fun acc child -> 
+            match child with 
+            | TypeInstance(var, newArgs) ->
+                match var with
+                | Variable(v) ->
+                    if Map.containsKey v env then
+                        let value = env[v]
+                        let subsitutedArgs = List.map (fun arg -> subsituteArgs arg args env) newArgs
+                        expandTypeInstance value subsitutedArgs env
+                    else
+                        printfn "Undefined type."
+                        exit 1
+                | _ ->
+                    failwith "Type instance must be a variable."
+            | _ -> acc @ [subsituteArgs child args env]
+        ) [] children)
         Room(newAttrs, newChildren)
     | Level(attrs, children) ->
-        let newAttrs = List.map (fun attr -> subsituteArgsHelper attr env) attrs
-        let newChildren = List.map (fun child -> subsituteArgsHelper child env) children
-        Level(newAttrs, newChildren)
+        failwith "Cannot have nested levels."
+        exit 1
     | TypeDef(pars, children) ->
-        let newPars = List.map (fun par -> subsituteArgsHelper par env) pars
-        let newChildren = List.map (fun child -> subsituteArgsHelper child env) children
-        TypeDef(newPars, newChildren)    
+        failwith "Cannot have nested type definitions."
+        exit 1
     | TypeInstance(var, args) ->
-        let newVar = subsituteArgsHelper var env
-        let newArgs = List.map (fun arg -> subsituteArgsHelper arg env) args
-        TypeInstance(newVar, newArgs)
+        failwith "type instance should not be hit here."
+        exit 1
     | Assignment(left, right) ->
-        Assignment(subsituteArgsHelper left env, subsituteArgsHelper right env)
+        failwith "Cannot have nested type definitions."
+        exit 1
     | Sequence(exprs) ->
-        Sequence(List.map (fun e -> subsituteArgsHelper e env) exprs)
+        Sequence(List.map (fun e -> subsituteArgs e args env) exprs)
 
 
 
@@ -120,10 +133,11 @@ let rec subsituteArgsHelper (expr: Expr)(env: Args) : Expr =
 (* subsituteArgs
  *   Replaces a type def instance with its children and arguments subsituted
  *)
-let rec subsituteArgs (def: TypeDef)(args: Expr list) : Expr list =
+and expandTypeInstance (def: TypeDef)(args: Expr list)(env: Env) : Expr list =
     let pars, children = def
-    let env: Args = getArgsPairs pars args |> Map.ofList
-    match (subsituteArgsHelper (Sequence children) env) with
+    let args: Args = getArgsEnv pars args |> Map.ofList
+
+    match (subsituteArgs (Sequence children) args env) with
     | Sequence(newChildren) -> newChildren
     | _ ->
         failwith "This should never be touched."
@@ -131,64 +145,53 @@ let rec subsituteArgs (def: TypeDef)(args: Expr list) : Expr list =
     
 
 
-(* subsituteTypeDefs
+(* expandTypeInstances
  *   Replaces all type def instances with the type def constructor and correct arguments and children objects
  *)
-let rec subsituteTypeDefs (e: Expr)(env: Env) : Expr * Env =
+let rec expandTypeInstances (e: Expr)(env: Env) : Expr * Env =
     match e with
     | Num _ -> e, env
     | EString _ -> e, env
     | Variable v -> e, env
-        // if Map.containsKey v env then
-        //     let value = env[v]
-        //     value, env
-        // else
-        //     printfn "Undefined variable."
-        //     exit 1
-    | Property(key, value) ->
-        let newKey, _ = subsituteTypeDefs key env
-        let newValue, _ = subsituteTypeDefs value env
-        Property (newKey, newValue), env
-    | Furniture (attrs)-> 
-        Furniture(List.map (fun attr -> 
-            let newExpr, _ = subsituteTypeDefs attr env
-            newExpr
-        ) attrs), env
+    | Property(_, _) -> e, env
+    | Furniture (_)-> e, env
     | Room (attrs, children)->
-        let newAttrs = (List.map (fun attr -> 
-            let newExpr, _ = subsituteTypeDefs attr env
-            newExpr
-        ) attrs)
-        let newChildren = (List.map (fun attr -> 
-            let newExpr, _ = subsituteTypeDefs attr env
-            newExpr
-        ) children)
-        // Type check attrs and children
-        Room(newAttrs, newChildren), env
+        let newChildren = (List.fold (fun acc child -> 
+            match child with 
+            | TypeInstance(var, args) ->
+                match var with
+                | Variable(v) ->
+                    if Map.containsKey v env then
+                        let value = env[v]
+                        expandTypeInstance value args env
+                    else
+                        printfn "Undefined type."
+                        exit 1
+                | _ ->
+                    failwith "Type instance must be a variable."
+            | _ -> acc @ [child]
+        ) [] children)
+        Room(attrs, newChildren), env
     | Level (attrs, children)->
-        let newAttrs = (List.map (fun attr -> 
-            let newExpr, _ = subsituteTypeDefs attr env
-            newExpr
-        ) attrs)
-        let newChildren = (List.map (fun attr -> 
-            let newExpr, _ = subsituteTypeDefs attr env
-            newExpr
-        ) children)
-        // Type check attrs and children
-        Level(newAttrs, newChildren), env
-    | TypeDef (pars, children) -> 
-        let newAttrs = (List.map (fun attr -> 
-            let newExpr, _ = subsituteTypeDefs attr env
-            newExpr
-        ) pars)
-        let newChildren = (List.map (fun attr -> 
-            let newExpr, _ = subsituteTypeDefs attr env
-            newExpr
-        ) children)
-        // Type check attrs and children
-        TypeDef(newAttrs, newChildren), env
-    | TypeInstance(var, pars) ->
-        failwith "Should never get here, should be in Sequence, Level, or Room."
+        let newChildren = (List.fold (fun acc child -> 
+            match child with 
+            | TypeInstance(var, args) ->
+                match var with
+                | Variable(v) ->
+                    if Map.containsKey v env then
+                        let value = env[v]
+                        expandTypeInstance value args env
+                    else
+                        printfn "Undefined type."
+                        exit 1
+                | _ ->
+                    failwith "Type instance must be a variable."
+            | _ -> acc @ [child]
+        ) [] children)
+        Level(attrs, newChildren), env
+    | TypeDef (_, _) -> e, env
+    | TypeInstance(_, _) -> 
+        failwith "type instance should not be hit here."
         exit 1
     | Assignment (lhs, rhs) ->
         match rhs with
@@ -204,17 +207,20 @@ let rec subsituteTypeDefs (e: Expr)(env: Env) : Expr * Env =
             printfn "Right hand side of an assignment must be a type definition."
             exit 1
     | Sequence es ->
-        match es with
-        | [] ->
-            printfn "Empty sequence not allowed."
-            exit 1
-        | [e] -> subsituteTypeDefs e env
-        | e::es2 ->
-            match e with
+        let newExprs, newEnv = (List.fold (fun (eAcc, envAcc) expr -> 
+            match expr with
             | Assignment (_, _) ->
-                let _, env1 = subsituteTypeDefs e env
-                let s = Sequence es2
-                subsituteTypeDefs s env1
-            | _ ->
-                failwith "Sequence must be of type definition assignments."
+                let _, newEnv = expandTypeInstances expr envAcc
+                eAcc, newEnv         
+            | Level(_, _) ->
+                let newExpr, _ = expandTypeInstances expr envAcc
+                newExpr::eAcc, envAcc
+            | TypeInstance(_, _) ->
+                failwith "Type instance must be used within a level."
                 exit 1
+            | _ ->
+                failwith "Sequence must be of type definition and levels."
+                exit 1
+        ) ([], Map.empty) es)
+
+        Sequence(List.rev newExprs), newEnv
