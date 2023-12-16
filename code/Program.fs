@@ -25,9 +25,8 @@ let main argv : int =
     | Some ast ->
         try
             let subsituted_expr, _ = expandTypeInstances ast Map.empty
-            printfn "\n\nNew AST: %A" subsituted_expr
             generateSVGs subsituted_expr
-            printfn "SVG images generated!"
+            printfn "\nSVG images generated!\n"
         with
         | ex ->
             printfn "Caught exception: %s" ex.Message

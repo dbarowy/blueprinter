@@ -150,7 +150,6 @@ let rec subsituteArgs (expr: Expr)(x: int)(y: int)(args: Args)(env: Env) : Expr 
     | Num(_) -> expr
     | EString(_) -> expr
     | Variable(v) ->
-        printfn "%s" v 
         if Map.containsKey v args then
             let value = args[v]
             value
@@ -294,7 +293,7 @@ let rec expandTypeInstances (e: Expr)(env: Env) : Expr * Env =
                 | Variable(v) ->
                     if Map.containsKey v env then
                         let value = env[v]
-                        expandTypeInstance value x y args env
+                        acc @ (expandTypeInstance value x y args env)
                     else
                         printfn "Undefined type."
                         exit 1
@@ -302,8 +301,8 @@ let rec expandTypeInstances (e: Expr)(env: Env) : Expr * Env =
                     printfn "Type instance must be a variable."
                     exit 1
             | _ -> 
-                expandTypeInstances child env |> ignore
-                acc @ [child]
+                let childExpandedExpr, _ = expandTypeInstances child env
+                acc @ [childExpandedExpr]
         ) [] children)
         Room(attrs, newChildren), env
     | Level (attrs, children) ->
@@ -317,7 +316,7 @@ let rec expandTypeInstances (e: Expr)(env: Env) : Expr * Env =
                 | Variable(v) ->
                     if Map.containsKey v env then
                         let value = env[v]
-                        expandTypeInstance value x y args env
+                        acc @ (expandTypeInstance value x y args env)
                     else
                         printfn "Undefined type."
                         exit 1
@@ -325,12 +324,11 @@ let rec expandTypeInstances (e: Expr)(env: Env) : Expr * Env =
                     printfn "Type instance must be a variable."
                     exit 1
             | _ -> 
-                expandTypeInstances child env |> ignore
-                acc @ [child]
+                let childExpandedExpr, _ = expandTypeInstances child env
+                acc @ [childExpandedExpr]
         ) [] children)
         Level(attrs, newChildren), env
     | TypeDef (pars, children) -> 
-        printfn "HERE"
         e, env
     | TypeInstance(_, _, _, _) -> 
         printfn "type instance should not be hit here."
@@ -411,14 +409,17 @@ let rec eval (expr: Expr)(x: int)(y: int) : string =
         let roomY = mapGetInt attrsMap "y"
         let roomWidth = mapGetInt attrsMap "width"
         let roomHeight = mapGetInt attrsMap "height"
-        let roomName = mapGetString attrsMap "name"
-
-        let textX = x + roomX + (roomWidth / 2)
-        let textY = y + roomY + (roomHeight / 2)       
-
-        "\t<rect x=\"" + string (x + roomX) + "\" y=\"" + string (y + roomY) + "\" width=\"" + string roomWidth + "\" height=\"" + string roomHeight + "\" fill=\"none\" stroke=\"blue\" stroke-width=\"2\" />\n"
-        + "\t<text x=\"" + string (textX) + "\" y=\"" + string (textY) + "\" font-family=\"Arial\" font-size=\"20\" fill=\"black\" text-anchor=\"middle\" dominant-baseline=\"middle\" >" + roomName + "</text>\n"
-        + (eval (Sequence(children)) (x + roomX) (y + roomY))
+        
+        if Map.containsKey "name" attrsMap then
+            let roomName = mapGetString attrsMap "name"
+            let textX = x + roomX + (roomWidth / 2)
+            let textY = y + roomY + (roomHeight / 2)      
+            "\t<rect x=\"" + string (x + roomX) + "\" y=\"" + string (y + roomY) + "\" width=\"" + string roomWidth + "\" height=\"" + string roomHeight + "\" fill=\"none\" stroke=\"blue\" stroke-width=\"2\" />\n"
+            + "\t<text x=\"" + string (textX) + "\" y=\"" + string (textY) + "\" font-family=\"Arial\" font-size=\"20\" fill=\"black\" text-anchor=\"middle\" dominant-baseline=\"middle\" >" + roomName + "</text>\n"
+            + (eval (Sequence(children)) (x + roomX) (y + roomY))
+        else
+            "\t<rect x=\"" + string (x + roomX) + "\" y=\"" + string (y + roomY) + "\" width=\"" + string roomWidth + "\" height=\"" + string roomHeight + "\" fill=\"none\" stroke=\"blue\" stroke-width=\"2\" />\n"
+            + (eval (Sequence(children)) (x + roomX) (y + roomY))       
 
     | Furniture(attrs) ->
         let attrsMap = getPropertiesMap attrs
@@ -427,13 +428,13 @@ let rec eval (expr: Expr)(x: int)(y: int) : string =
         let furnitureWidth = mapGetInt attrsMap "width"
         let furnitureHeight = mapGetInt attrsMap "height"
 
-        if Map.containsKey "height" attrsMap then
+        if Map.containsKey "name" attrsMap then
             let furnitureName = mapGetString attrsMap "name"
             let textX = x + furnitureX + (furnitureWidth / 2)
             let textY = y + furnitureY + (furnitureHeight / 2)
 
             "\t<rect x=\"" + string (x + furnitureX) + "\" y=\"" + string (y + furnitureY) + "\" width=\"" + string furnitureWidth + "\" height=\"" + string furnitureHeight + "\" fill=\"none\" stroke=\"blue\" stroke-width=\"2\" />\n"
-            + "\t<text x=\"" + string (textX) + "\" y=\"" + string (textY) + "\" font-family=\"Arial\" font-size=\"20\" fill=\"black\" text-anchor=\"middle\" dominant-baseline=\"middle\" >" + furnitureName + "</text>\n"
+            + "\t<text x=\"" + string (textX) + "\" y=\"" + string (textY) + "\" font-family=\"Arial\" font-size=\"10\" fill=\"black\" text-anchor=\"middle\" dominant-baseline=\"middle\" >" + furnitureName + "</text>\n"
         else
             "\t<rect x=\"" + string (x + furnitureX) + "\" y=\"" + string (y + furnitureY) + "\" width=\"" + string furnitureWidth + "\" height=\"" + string furnitureHeight + "\" fill=\"none\" stroke=\"blue\" stroke-width=\"2\" />\n"
 
