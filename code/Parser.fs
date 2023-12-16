@@ -67,26 +67,19 @@ let pproperty: Parser<Expr> =
    let pleft = pleft (pad pstring) (pchar '=')
    pseq pleft (pad (pstring <|> pnum <|> pvar)) (fun (key, value) -> Property(key, value)) <!> "pproperty"
 
-(* ppropertiesLevel
+(* pproperties
  *   Helper parser for list of properties.
  *)
 let ppropertyAdditional = pright (pstr ",") pproperty
-let ppropertiesLevel: Parser<Expr list> = 
+let pproperties: Parser<Expr list> = 
    (pseq pproperty (pmany0 ppropertyAdditional) (fun (attr, attrs) -> attr::attrs)) <!> "pproperties"
-
-
-(* ppropertiesRoomAndFur
- *   Helper parser for list of properties for rooms and furniture.
- *)
-let ppropertiesRoomAndFur: Parser<Expr list> = 
-   (pseq (pleft px (pchar ',')) (pseq py (pmany0 ppropertyAdditional) (fun (yattr,attrs) -> yattr::attrs)) (fun (xattr, attrs) -> xattr::attrs)) <!> "pproperties"
 
 
 (* pfurniture
  *   Parses a furniture object. Furniture is a tuple of the name and the image path
  *)
 let pfurniture: Parser<Expr> = 
-   (pbetween (pstr "Furniture(") ppropertiesRoomAndFur (pstr ")")) |>> Furniture <!> "pfurniture"
+   (pbetween (pstr "Furniture(") pproperties (pstr ")")) |>> Furniture <!> "pfurniture"
 
 
 (* pchildrenRoom
@@ -100,7 +93,7 @@ let rec pchildrenRoom =
  *   Parses a room object.
  *)
 let proom = 
-   pbetween (pstr "Room(") (pseq (pleft ppropertiesRoomAndFur (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenRoom (fun (attrs, children) -> Room(attrs, children))) (pstr "}") <!> "proom"
+   pbetween (pstr "Room(") (pseq (pleft pproperties (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenRoom (fun (attrs, children) -> Room(attrs, children))) (pstr "}") <!> "proom"
 
 
 (* pchildrenLevel
@@ -113,7 +106,7 @@ let rec pchildrenLevel =
  *   Parses a level object.
  *)
 let plevelInside: Parser<Expr> = 
-   pseq (pleft ppropertiesLevel (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenLevel (fun (attrs, children) -> Level(attrs, children)) <!> "plevelInside"
+   pseq (pleft pproperties (space (pchar ')') (pchar '{') (fun (a, b) -> a))) pchildrenLevel (fun (attrs, children) -> Level(attrs, children)) <!> "plevelInside"
 let plevel =
    pbetween (pstr "Level(") plevelInside (pstr "}") <!> "plevel"
 
@@ -133,11 +126,10 @@ let ptypedef: Parser<Expr> =
  *   MiniGolf (length, width){...}
  *)
 let pargAdditional = pright (pstr ",") (pad (pstring <|> pnum <|> pvar)) <!> "pargAdditional"
-let pargs: Parser<Expr list> = 
-   let emptyList = []
-   (pseq (pad (pstring <|> pnum <|> pvar)) (pmany0 pargAdditional) (fun (attr, attrs) -> attr::attrs)) <|> (presult emptyList) <!> "pargs"
+let pargs = 
+   (pseq (pleft px (pchar ',')) (pseq py (pmany0 pargAdditional) (fun (yattr,args) -> yattr, args)) (fun (xattr, (yattr, args)) -> (xattr, yattr, args))) <!> "pargs"
 let pinstance = 
-      pseq pvar (pbetween (pstr "(") pargs (pchar ')')) (fun (var, children) -> TypeInstance(var, children)) <!> "pinstance"
+      pseq pvar (pbetween (pstr "(") pargs (pchar ')')) (fun (var, (x, y, args)) -> TypeInstance(var, x, y, args)) <!> "pinstance"
 
 (* passign
  *   Parses an assignment, e.g.,

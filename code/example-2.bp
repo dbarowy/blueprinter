@@ -1,3 +1,6 @@
-Level("name" = "main_floor", "num" = 0, "width" = 400, "height" = 110) {
-    Furniture("x" = 0 , "y" = 0, "name" = "chair")
+Level("filepath" = "main_floor.svg", "num" = 0, "width" = 1200, "height" = 700) {
+    Room("y" = 300 , "x" = 300, "width" = 200, "height" = 200, "name" = "bedroom") {
+        Furniture("y" = 40 , "x" = 80, "width" = 100, "height" = 40, "name" = "chair")
+    }
+    Furniture("y" = 40 , "x" = 80, "width" = 200, "height" = 80, "name" = "outside monitor")
 }

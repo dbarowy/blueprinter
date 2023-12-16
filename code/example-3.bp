@@ -1,7 +1,7 @@
-type CommonFloor( height , width) {
-    Level("name" = "main_floor", "num" = 0, "width" = width, "height" = height) {
-        Furniture("name" = "couch", "x" = 0, "y" = 0)
-    }
+type test2(id) {
+    Furniture("x" = 2, "y" = 1, "id" = id)
 }
 
-CommonFloor(110, 400) {}
+Level("name" = 3, "id" = id) {
+    test2("x" = 2, "y" = 1, 1)
+}

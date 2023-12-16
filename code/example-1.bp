@@ -1,13 +1,14 @@
-type test2(id) {
-    Furniture("id" = id)
+type bed(name, width) {
+    Furniture("x" = 0, "y" = 0, "height"=100, "width"=width, "name" = name)
 }
 
-type test( id , name) {
-    Room("name" = name, "id" = id) {
-        test2(id)
+type bedroom( name) {
+    bed("x" = 0, "y" = 0, name, 200)
+    Room("x" = 200, "y" = 100, "height"=300, "width"=300, "name" = "roomies") {
+        bed("x" = 2, "y" = 1, name, 100)
     }
 }
 
-Level("name" = 3, "id" = id) {
-    test(1, "ben")
+Level("filepath" = "levels.svg", "width" = 1200, "height" = 700) {
+    bedroom("x" = 200, "y" = 100, "ben")
 }

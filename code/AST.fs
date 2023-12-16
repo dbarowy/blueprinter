@@ -10,7 +10,7 @@ type Expr =
 | Room of attrs: Expr list * children: Expr list
 | Level of attrs: Expr list * children: Expr list
 | TypeDef of TypeDef
-| TypeInstance of var: Expr * args: Expr list
+| TypeInstance of var: Expr * x: Expr * y: Expr * args: Expr list
 | Assignment of Expr * Expr
 | Sequence of Expr list
 

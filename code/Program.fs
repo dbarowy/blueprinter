@@ -23,10 +23,10 @@ let main argv : int =
     (* try to evaluate what we parsed... or not *)
     match ast_maybe with
     | Some ast ->
-        printfn "Old AST: %A" ast
         try
             let subsituted_expr, _ = expandTypeInstances ast Map.empty
             printfn "\n\nNew AST: %A" subsituted_expr
+            generateSVGs subsituted_expr
             printfn "SVG images generated!"
         with
         | ex ->
