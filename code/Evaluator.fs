@@ -53,6 +53,7 @@ let rec prettyprint (e: Expr) : string =
 
 (* getNumFromProperty
  *   If you know an expr is a property to a Num, pulls out the num
+ *   Used for x, y, width, height properties
  *)
 let getNumFromProperty(num: Expr): int =
     match num with
@@ -64,16 +65,6 @@ let getNumFromProperty(num: Expr): int =
             exit 1
     | _ ->
         printfn "this should only be called with a property"
-        exit 1
-
-(* getNum
- *   If you know an expr is a Num, pulls out the num
- *)
-let getNum(num: Expr): int =
-    match num with
-    | Num(x) -> x
-    | _ ->
-        printfn "This function should only be used with a Num Expr."
         exit 1
 
 
@@ -435,13 +426,16 @@ let rec eval (expr: Expr)(x: int)(y: int) : string =
         let furnitureY = mapGetInt attrsMap "y"
         let furnitureWidth = mapGetInt attrsMap "width"
         let furnitureHeight = mapGetInt attrsMap "height"
-        let furnitureName = mapGetString attrsMap "name"
 
-        let textX = x + furnitureX + (furnitureWidth / 2)
-        let textY = y + furnitureY + (furnitureHeight / 2)
+        if Map.containsKey "height" attrsMap then
+            let furnitureName = mapGetString attrsMap "name"
+            let textX = x + furnitureX + (furnitureWidth / 2)
+            let textY = y + furnitureY + (furnitureHeight / 2)
 
-        "\t<rect x=\"" + string (x + furnitureX) + "\" y=\"" + string (y + furnitureY) + "\" width=\"" + string furnitureWidth + "\" height=\"" + string furnitureHeight + "\" fill=\"none\" stroke=\"blue\" stroke-width=\"2\" />\n"
-        + "\t<text x=\"" + string (textX) + "\" y=\"" + string (textY) + "\" font-family=\"Arial\" font-size=\"20\" fill=\"black\" text-anchor=\"middle\" dominant-baseline=\"middle\" >" + furnitureName + "</text>\n"
+            "\t<rect x=\"" + string (x + furnitureX) + "\" y=\"" + string (y + furnitureY) + "\" width=\"" + string furnitureWidth + "\" height=\"" + string furnitureHeight + "\" fill=\"none\" stroke=\"blue\" stroke-width=\"2\" />\n"
+            + "\t<text x=\"" + string (textX) + "\" y=\"" + string (textY) + "\" font-family=\"Arial\" font-size=\"20\" fill=\"black\" text-anchor=\"middle\" dominant-baseline=\"middle\" >" + furnitureName + "</text>\n"
+        else
+            "\t<rect x=\"" + string (x + furnitureX) + "\" y=\"" + string (y + furnitureY) + "\" width=\"" + string furnitureWidth + "\" height=\"" + string furnitureHeight + "\" fill=\"none\" stroke=\"blue\" stroke-width=\"2\" />\n"
 
     | Sequence(es) ->
         String.concat "" (List.map (fun e -> eval e x y) es)
