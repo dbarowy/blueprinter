@@ -52,7 +52,7 @@
 
 \begin{document}
   
-\section*{Blueprint}
+\section*{Blueprinter}
 
 Benjamin Wilen
 
@@ -80,55 +80,50 @@ bed and baths, how to properly add plumbing and electricity, and many other feat
 \subsection{Design Principles}
 The goal of Blueprinter is to build a language that reflects how an architect thinks through the design of a space. As a result, there are three guiding design principles that Blueprinter will use. 
 1) There are three primitive objects in a design: levels, rooms, and furniture. Although we hope to make our language as generalizable as possible,
-these three objects can represent almost any structure. A level corresponds to a floor, or one SVG image. A room is a enclosed space, and can contain rooms or furniture within it. Furniture is the most atomic part of a blueprint, and represents a physical thing. 2) The language should enable nested substructures to model nested spaces.
-Therefore, rooms and furniture can be within levels, and rooms and furniture can also be within rooms (you can have sub-rooms). 3) The code should be modular and reusable.
+these three objects can represent almost any structure. A level corresponds to a floor, or one SVG image. A room is a enclosed space, and can contain rooms or furniture within it. Furniture is the most atomic part of a blueprint, and represents a physical thing. 
+2) The language should enable nested substructures to model nested spaces.
+Therefore, rooms and furniture can be within levels, and rooms and furniture can also be within rooms (you can have sub-rooms). Locations will also be relative to the parent to enable easy modeling. For example, 
+if a room is in the middle of a floor, and I want to put a furniture in the top left of the room, instead of finding that location on the entire blueprint, the furniture's location will just be (0,0) (the top left). 3) The code should be modular and reusable.
 A programmer should have the option to define a design, with parameters, and instanciate it throughout a design. For example, if an architect creates a spiral staircase, they should
 be allowed to use it in multiple places without having to redefine it. This will also be how a standard library of rooms and furniture can be defined.
 
 
 \subsection{Examples}
+To run an example, navigate to the code directory and run "dotnet run \textless example\_name.bp\textgreater". The examples are currently stored in the code directory. All three examples produce the same output,
+shown below, but the first example directly defines it, the second example uses a type definition with no arguments, and the third example uses a type definition with arguments.
 \begin{verbatim} 
-Example 1
+Output for All Three (inside example.svg):
+<svg width="1220" height="720" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<rect x="10" y="10" width="1200" height="700" fill="none" stroke="blue" stroke-width="2" />
+	<rect x="10" y="360" width="200" height="350" fill="none" stroke="blue" stroke-width="2" />
+	<text x="110" y="535" font-family="Arial" font-size="20" fill="black" text-anchor="middle" dominant-baseline="middle" >Example Room</text>
+</svg>
+
+
+Example 1 (directly defining room):
 Run with command: "dotnet run example_1.bp"
-Output: Nothing 
-(Because there are only type definitions and not actually instances,
-nothing is generated. This is equivalent to a program in python that
-is just x = 5)
 
-Example 2:
+Example 2 (using type definition):
 Run with command: "dotnet run example_2.bp"
-Output: Produces main_floor.svg
-Inside of main_floor.svg:
-<svg width="400" height="110">
-  <rect width="300" height="100" style="fill:rgb(0,0,255);stroke-width:3;stroke:rgb(0,0,0)" >
-    <text x="0" y="10" font-family="Verdana" font-size="55" fill="blue"> Living Room </text>
-  </rect>
-</svg>
 
-Example 3:
+Example 3 (using type definition with arguments):
 Run with command: "dotnet run example_3.bp"
-Output: Produces main_floor.svg
-Inside of main_floor.svg:
-<svg width="400" height="110">
-  <rect width="300" height="100" style="fill:rgb(0,0,255);stroke-width:3;stroke:rgb(0,0,0)" >
-    <text x="0" y="10" font-family="Verdana" font-size="55" fill="blue"> Living Room </text>
-  </rect>
-</svg>
 
 \end{verbatim}
 
 \subsection{Language Concepts}
-The primitive values in Blueprinter are strings and numbers. The combining forms are Furniture, Rooms, and Levels. 
+The primitive values in Blueprinter are strings and numbers. The combining forms are Furniture, Rooms, Levels, Type Instances. 
 Lastly, primitives can be stored in variables and combining forms can be stored in type definitions. A program consists of Level objects as well as type definitions.
 \\\\
-Because primitive values in Blueprinter follow a similar form and usage as other programming languages, I'll discuss combining forms, variables, and type definitions in this section.
-Furniture, Rooms, and Levels are initialized with attributes, which can be strings or numbers. These are used to define characteristics such as name, id, dimensions, size, shape, etc. 
+Because primitive values in Blueprinter follow a similar form and usage as other programming languages, I'll discuss combining forms and type definitions in this section.
+Furniture, Rooms, and Levels are initialized with properties. Properties are a pair seperated by an equal sign, with the key being a string and the value being a string, num, or variable. 
+These are used to define characteristics such as name, id, dimensions, size, shape, etc. For this implemention, x, y, width, and height are required, and name can be optionally defined if you want it to show up.
 Attributes are checked at runtime in the evaluation phase of a program.
 Rooms and Levels also have children objects, which can be Rooms and Furniture. Because of this nested property, rooms and levels have a recursive nature. A level corresponds to a single SVG image to mimic Blueprint design where each floor is a seperate sheet. As a result, Levels cannot be defined with Levels.
 \\\\
-Variables and type definitions enable reusable code. A type definition is similar to a simple function that only takes arguments and returns a value (no intermediary calculations).
-Within a type definition can be anything included in a normal Blueprinter program with the exception that a type definition currently cannot be defined inside another type definition (this might change in the future).
-For implementation simplicity, I use dynamic variables where the latest instantiation is the current value. Type definitions are also dynamic as the latest type definition for its type name is the one considered when it is instantiated.
+Type definitions enable reusable code. A type definition is similar to a simple function that only takes arguments and returns a value (no intermediary calculations).
+Within a type definition can be anything included in a normal Blueprinter program with the exception that a type definition currently cannot be defined inside another type definition.
+For implementation simplicity, I use dynamic variables where the latest instantiation is the current value. Type definitions are also dynamic as the latest type definition for its type name is the one considered when it is instantiated. Type Instances require and x and y property, and the neccessary arguments specified in the type definition.
 
 \subsection{Formal Syntax}
 \begin{verbatim}
@@ -158,33 +153,32 @@ For implementation simplicity, I use dynamic variables where the latest instanti
 \end{verbatim}
 
 \subsection{Semantics}
-% Table with three columns: Name, Age, Gender
+Notes on Semantics: For Levels, a "filepath", "width", and "height" property must be defined. 
+For rooms and furniture, "x", "y", "width", and "height" properties must be defined. Name is optional depending on if you want it to show up on the blueprint.
+For type instances, "x" and "y" properties must be defined with x defined first, then y.
+\\\\
 \small
-\begin{tabular}{c|c|c|c|c}
+\begin{tabular}{c|c|c|c}
     \hline
-    \textbf{Syntax} & \textbf{Abstract Syntax} & \textbf{Type} & \textbf{Prec/Assoc} & \textbf{Meaning} \\
+    \textbf{Syntax} & \textbf{Abstract Syntax} & \textbf{Type}& \textbf{Meaning} \\
     \hline
-    n & Number of int & int & n/a & n is a primitive \\
-    "string" & EString of string & string & n/a & "string" is a primitive \\
-    x & Variable of string & string & n/a & stored variable identifier \\
-    "id"="ex" & Attribute of Expr * Expr & 'a -\textgreater 'b -\textgreater string & n/a & Attribute of an object such as location or size \\
-    Furniture() & Furniture of Expr list & 'a list -\textgreater string & 2, N/A & a furniture object that returns the svg of the furniture item \\
-    Room()\{\} & Room of Expr list * Expr list & 'a list -\textgreater 'b list -\textgreater string & 2, N/A & a room object that returns the svg of the room item \\
-    Level()\{\} & Level of Expr list * Expr list & 'a list -\textgreater 'b list -\textgreater unit & 2, N/A & a level object that returns the svg of the level item \\
-    type test()\{\} & Assignment of Expr * Expr & 'a -\textgreater 'b -\textgreater Expr & 1, N/A & a type definition for resuable object collections \\
+    n & Number of int & int & n is a primitive \\
+    "string" & string & strin g& "string" is a primitive \\
+    x & string & string & stored variable identifier \\
+    "x"=4 & Expr * Expr & 'a -\textgreater 'b -\textgreater string & Attribute of an object such as location or size \\
+    Furniture() & Expr list & 'a list -\textgreater string & a furniture object that returns the svg of the furniture item \\
+    Room()\{\} & Expr list * Expr list & 'a list -\textgreater 'b list -\textgreater string & a room object that returns the svg of the room item \\
+    Level()\{\} & Expr list * Expr list & 'a list -\textgreater 'b list -\textgreater unit & a level object that returns the svg of the level item \\
+    type Test()\{\} & Expr * Expr & 'a -\textgreater 'b -\textgreater Expr & a type definition for resuable object collections \\
+    Test() & Expr * Expr * Expr * Expr list & 'a -\textgreater 'b -\textgreater Expr & a type instance with "x", "y", and arguments listed \\
     \hline
 \end{tabular}
 
 \subsection{Remaining Work}
-There is one feature neccessary to the programming language, and three cool extensions (I'll hopefully be able to implement 1 or 2).
-First, I need to implement the evaluation of Levels, Rooms, and Furniture. This will involve converting those objects into SVGs. For this project, I expect everything to be denoted as rectangulars,
-but a cool future extension would be to enable images for furniture. The three extensions not neccessary for the MVP are:
-\\
-1) Lexical scoped variables and type definitions (to enable nested type definitions).
-\\
-2) Importing type definitions from other programs (would allow me to make a standard library of objects).
-\\
-3) Expressions for analysis of blueprints.
-
-% DO NOT DELETE ANYTHING BELOW THIS LINE
+There are four future improvements that would strengthen Blueprinter. These features enable the language to be more flexible, collaborative, and analytical.
+First, the language should allow more attributes to be specified on rooms and furniture, such as shape, color, filling, etc. Second, furniture should allow
+ a filepath to an image instead of just a rectangle (for example, a couch could be an icon of a couch). Both of these improvements would enable blueprints to be more flexible and descriptive. Third, 
+Blueprinter should allow for imports of type definitions. The way this could be implemented is adding the type definitions gathered from the imported AST and use it as the base environment for the program.
+This would allow standard libraries of rooms and furniture, such as staircases, common furniture, doors, etc. and would make Blueprinter a collaborative, open-source language. Lastly, Blueprinter can be extended 
+to enable analytics on a program. Analytics could range from square footage to a room breakdown to even more complex analysis such as wasted space and flow of people.
 \end{document}
