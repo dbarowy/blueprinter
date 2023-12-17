@@ -5,7 +5,9 @@ open System.IO
 open Tests
 
 
-
+(* readProgram
+ *   reads a program from a .bp file if the file exists
+ *)
 let readProgram(program: string): string =
     try
         File.ReadAllText program
@@ -25,7 +27,7 @@ let main argv : int =
         printfn "Usage: dotnet run <file> [debug] or dotnet run --test"
         exit 1
 
-    (* does the user want parser debugging turned on? *)
+    (* does the user want parser debugging turned on or to run the test suite? *)
     let do_debug = if (argv.Length = 2 && argv[1] = "debug") then true else false
     let do_test = if (argv[0] = "--test") then true else false
 
@@ -33,6 +35,7 @@ let main argv : int =
         runTests()
         0
     else // run program normally
+
         (* read in the input file *)
         let file = argv.[0]
 
@@ -47,7 +50,7 @@ let main argv : int =
         match ast_maybe with
         | Some ast ->
             try
-                let subsituted_expr, _ = expandTypeInstances ast Map.empty
+                let subsituted_expr, _ = expandTypeInstances ast Map.empty //get ast with no type instances
                 generateSVGs subsituted_expr
                 printfn "\nSVG images generated!\n"
             with

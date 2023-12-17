@@ -3,8 +3,10 @@ module Evaluator
 open AST
 open System
 
-(* Represents a type environment *)
+(* Represents a a declared type definition environment *)
 type Env = Map<string,TypeDef>
+
+(* Represents an Expr Map *)
 type Args = Map<string, Expr>
 
 (* prettyprint
@@ -144,6 +146,7 @@ let rec getPropertiesMap (properties: Expr list): Args =
 
 (* subsituteArgsHelper
  *   Recursively replaces all type def instances with the type def constructor and correct arguments and children objects
+ *   args is the args passed for the type instance, env is all previously declared type definitions (used for nested instances)
  *)
 let rec subsituteArgs (expr: Expr)(x: int)(y: int)(args: Args)(env: Env) : Expr =
     match expr with
@@ -368,7 +371,7 @@ let rec expandTypeInstances (e: Expr)(env: Env) : Expr * Env =
 
 
 (* evalLevel
- *   Generates the string SVG for the level
+ *   Generates the string SVG for a level
  *)
 let rec eval (expr: Expr)(x: int)(y: int) : string =
     match expr with

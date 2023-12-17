@@ -52,17 +52,24 @@ let pvar: Parser<Expr> = pseq pletter (pmany0 pvarchar |>> stringify)
                            (fun (c: char, s: string) -> (string c) + s)
                            |>> Variable <!> "pvar"
 
-(* pproperty
- *   Parses an property of an object.
+(* px
+ *   Parses a "x" property
  *)
 let px: Parser<Expr> = 
    let pleft = pleft (pad (pstr "\"x\"")) (pchar '=')
-   pseq pleft (pad pnum) (fun (key, value) -> Property(EString(key), value)) <!> "pproperty"
+   pseq pleft (pad pnum) (fun (key, value) -> Property(EString(key), value)) <!> "px"
 
+(* py
+ *   Parses a "y" property
+ *)
 let py: Parser<Expr> = 
    let pleft = pleft (pad (pstr "\"y\"")) (pchar '=')
-   pseq pleft (pad pnum) (fun (key, value) -> Property(EString(key), value)) <!> "pproperty"
+   pseq pleft (pad pnum) (fun (key, value) -> Property(EString(key), value)) <!> "py"
 
+
+(* pproperty
+ *   Parses an property of an object.
+ *)
 let pproperty: Parser<Expr> = 
    let pleft = pleft (pad pstring) (pchar '=')
    pseq pleft (pad (pstring <|> pnum <|> pvar)) (fun (key, value) -> Property(key, value)) <!> "pproperty"
@@ -86,7 +93,7 @@ let pfurniture: Parser<Expr> =
  *   Helper parser for room children objects.
  *)
 let rec pchildrenRoom = 
-   pmany0 (pad pexpr)  <!> "pchildren"
+   pmany0 (pad pexpr)  <!> "pchildrenRoom"
 
 
 (* proom
@@ -100,7 +107,7 @@ let proom =
  *   Helper parser for level children objects.
  *)
 let rec pchildrenLevel = 
-   pmany0 (pad pexpr )  <!> "pchildren"
+   pmany0 (pad pexpr )  <!> "pchildrenLevel"
 
 (* plevel
  *   Parses a level object.

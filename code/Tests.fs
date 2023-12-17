@@ -4,6 +4,9 @@ open Parser
 open Evaluator
 open AST
 
+(* testParser
+ *   Happy path test of parser generates correct AST (without subsituted type instances), returns true if passes
+ *)
 let testParser(): bool =
     let input = """
     Level("filepath" = "example.svg", "width" = 1200, "height" = 700) {
@@ -28,6 +31,9 @@ let testParser(): bool =
     expectedResult = parse input false
 
 
+(* testInterpreter
+ *   Happy path test of eval given AST with no type instances, returns true if passes
+ *)
 let testInterpreter(): bool =
     let expr =  
             (Level
@@ -45,6 +51,10 @@ let testInterpreter(): bool =
 
     expected_result = actual_result 
 
+
+(* testExpandTypeInstances
+ *   Happy path test that expandTypeInstances properly subsitutes type definition for type instance, returns true if passes
+ *)
 let testExpandTypeInstances(): bool = 
     let ast =  
         (Sequence
@@ -81,6 +91,9 @@ let testExpandTypeInstances(): bool =
 
     expected_result = subsituted_expr
 
+(* runTests
+ *   Runs the entire test suite and prints out test results
+ *)
 let runTests(): unit =
     let parserTestResult = testParser()
     let InterpreterTestResult = testInterpreter()

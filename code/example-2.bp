@@ -2,7 +2,6 @@ type ExampleRoom() {
     Room("x" = 0, "y" = 0, "height"=350, "width"=200, "name" = "Example Room") {}
 }
 
-
 Level("filepath" = "example.svg", "width" = 1200, "height" = 700) {
     ExampleRoom("x" = 0, "y" = 350)
 }
