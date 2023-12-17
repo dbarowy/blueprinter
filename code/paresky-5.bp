@@ -23,6 +23,7 @@ type Staircase() {
 Level("filepath" = "paresky.svg", "width" = 1200, "height" = 700) {
     Room("x" = 0, "y" = 350, "height"=350, "width"=200, "name" = "Whitman's") {}
     Room("x" = 700, "y" = 550, "height"=150, "width"=200, "name" = "Lee's") {}
+    
     Room("x" = 200, "y" = 550, "height"=150, "width"=500, "id"="whitmans_dining_area") {
         Table("x" = 13, "y" = 13, 25, 8)
         Table("x" = 83, "y" = 13, 25, 8)
@@ -31,16 +32,15 @@ Level("filepath" = "paresky.svg", "width" = 1200, "height" = 700) {
         Table("x" = 293, "y" = 13, 25, 8)
         Table("x" = 363, "y" = 13, 25, 8)
         Table("x" = 433, "y" = 13, 25, 8)
-
         Table("x" = 13, "y" = 83, 25, 8)
         Table("x" = 83, "y" = 83, 25, 8)
         Table("x" = 153, "y" = 83, 25, 8)
         Table("x" = 223, "y" = 83, 25, 8)
         Table("x" = 293, "y" = 83, 25, 8)
         Table("x" = 363, "y" = 83, 25, 8)
-        Table("x" = 433, "y" = 83, 25, 8)
-        
+        Table("x" = 433, "y" = 83, 25, 8)     
     }
+
     Room("x" = 950, "y" = 550, "height"=150, "width"=250, "id"="lees_dining_area") {
         Table("x" = 13, "y" = 13, 25, 8)
         Table("x" = 83, "y" = 13, 25, 8)
@@ -49,15 +49,16 @@ Level("filepath" = "paresky.svg", "width" = 1200, "height" = 700) {
         Table("x" = 83, "y" = 83, 25, 8)
         Table("x" = 153, "y" = 83, 25, 8)
     }
+
     Room("x" = 250, "y" = 300, "height"=200, "width"=650, "id"="main_dining_area") {
         Table("x" = 150, "y" = 35, 400, 380)
         Table("x" = 150, "y" = 115, 400, 380)
     }
-    Room("x" = 75, "y" = 0, "height"=75, "width"=200, "name" = "Bathrooms") {}
 
     Staircase("x" = 325, "y" = 150)
     Staircase("x" = 675, "y" = 150)
     Staircase("x" = 1020, "y" = 150)
 
+    Room("x" = 75, "y" = 0, "height"=75, "width"=200, "name" = "Bathrooms") {}
     Room("x" = 1000, "y" = 0, "height"=150, "width"=200, "name" = "Study Room") {}
 }

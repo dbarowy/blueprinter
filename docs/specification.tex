@@ -22,7 +22,7 @@
 
 \pagestyle{fancy}
 
-\lhead{Blueprint}
+\lhead{Blueprinter}
 \rhead{\today}
 \lfoot{CSCI 334: Principles of Programming Languages}
 \cfoot{\thepage}
@@ -58,7 +58,7 @@ Benjamin Wilen
 
 \subsection{Introduction}
 
-Blueprint is a programming language for producing blueprint designs of any home, building, etc. This programming
+Blueprinter is a programming language for producing blueprint designs of any home, building, etc. This programming
 language attempts to make it easy to convert a design into graphical blueprints, and even easier to iterate on those
 designs. For example, say someone wants to build a floor of a building, and they have just made a blueprint of the
 rooms. The architect decides they want to make one room larger, they shouldn’t have to waste time recreating a whole
@@ -78,7 +78,7 @@ for an architect to analyze features of a blueprint, such as how many square fee
 bed and baths, how to properly add plumbing and electricity, and many other features.
 
 \subsection{Design Principles}
-The goal of Blueprint is to build a language that reflects how an architect thinks through the design of a space. As a result, there are three guiding design principles that Blueprint will use. 
+The goal of Blueprinter is to build a language that reflects how an architect thinks through the design of a space. As a result, there are three guiding design principles that Blueprinter will use. 
 1) There are three primitive objects in a design: levels, rooms, and furniture. Although we hope to make our language as generalizable as possible,
 these three objects can represent almost any structure. A level corresponds to a floor, or one SVG image. A room is a enclosed space, and can contain rooms or furniture within it. Furniture is the most atomic part of a blueprint, and represents a physical thing. 2) The language should enable nested substructures to model nested spaces.
 Therefore, rooms and furniture can be within levels, and rooms and furniture can also be within rooms (you can have sub-rooms). 3) The code should be modular and reusable.
@@ -118,44 +118,43 @@ Inside of main_floor.svg:
 \end{verbatim}
 
 \subsection{Language Concepts}
-The primitive values in Blueprint are strings and numbers. The combining forms are Furniture, Rooms, and Levels. 
+The primitive values in Blueprinter are strings and numbers. The combining forms are Furniture, Rooms, and Levels. 
 Lastly, primitives can be stored in variables and combining forms can be stored in type definitions. A program consists of Level objects as well as type definitions.
 \\\\
-Because primitive values in Blueprint follow a similar form and usage as other programming languages, I'll discuss combining forms, variables, and type definitions in this section.
+Because primitive values in Blueprinter follow a similar form and usage as other programming languages, I'll discuss combining forms, variables, and type definitions in this section.
 Furniture, Rooms, and Levels are initialized with attributes, which can be strings or numbers. These are used to define characteristics such as name, id, dimensions, size, shape, etc. 
 Attributes are checked at runtime in the evaluation phase of a program.
 Rooms and Levels also have children objects, which can be Rooms and Furniture. Because of this nested property, rooms and levels have a recursive nature. A level corresponds to a single SVG image to mimic Blueprint design where each floor is a seperate sheet. As a result, Levels cannot be defined with Levels.
 \\\\
 Variables and type definitions enable reusable code. A type definition is similar to a simple function that only takes arguments and returns a value (no intermediary calculations).
-Within a type definition can be anything included in a normal Blueprint program with the exception that a type definition currently cannot be defined inside another type definition (this might change in the future).
+Within a type definition can be anything included in a normal Blueprinter program with the exception that a type definition currently cannot be defined inside another type definition (this might change in the future).
 For implementation simplicity, I use dynamic variables where the latest instantiation is the current value. Type definitions are also dynamic as the latest type definition for its type name is the one considered when it is instantiated.
 
 \subsection{Formal Syntax}
 \begin{verbatim}
 <Blueprint> ::= <expr>+
 <expr> ::= <typeDef> | <level>
-<typedef> ::= type <var>(<pars>){<instances>}
-<instances> ::= <instance>*
-<instance> ::= <level> | <room> | <furniture>
+<typedef> ::= type <var>(<pars>){<children>}
 <children> ::= <child>*
-<child> ::= <room> | <furniture>
-<level> ::= Level(<attributes>) {<children>}
-<room> ::= Room(<attributes>) {<children>}
-<furniture> ::= Furniture(<attributes>)
-<attributes> ::= <attribute>*
-<attribute> ::= <key>=<value>,
+<child> ::= <room> | <furniture> | <typeinstance>
+<level> ::= Level(<properties>) {<children>}
+<room> ::= Room(<properties>) {<children>}
+<furniture> ::= Furniture(<properties>)
+<properties> ::= <property>*
+<property> ::= <key>=<value>,
+<typeinstance> ::= <var>("x"=<value>, "y"=<value>, <args>)
 <key> ::= "<string>"
+<args> :: <value>*
 <value> ::= "<string>" | <num> | <var> 
 <var> ::= <char>+
 <pars> ::= <var>*
-<num> ::= <float> | <int>
-<float> ::= <int>.<int>
+<num> ::= <int>
 <int> ::= <num>+
 <d> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 <string> ::= <char>*
 <char> ::= {'A'...'z'}
 
-*Blueprint is whitespace insensitive
+*Blueprinter is whitespace insensitive
 \end{verbatim}
 
 \subsection{Semantics}

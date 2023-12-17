@@ -1,12 +1,13 @@
 Level("filepath" = "paresky.svg", "width" = 1200, "height" = 700) {
     Room("x" = 0, "y" = 350, "height"=350, "width"=200, "name" = "Whitman's") {}
     Room("x" = 700, "y" = 550, "height"=150, "width"=200, "name" = "Lee's") {}
+    
     Room("x" = 200, "y" = 550, "height"=150, "width"=500, "id"="whitmans_dining_area") {
         Furniture("x" = 25, "y" = 25, "height"=25, "width"=25, "name" = "Table")
         Furniture("x" = 33, "y" = 13, "height"=8, "width"=8)
-        Furniture("x" = 33, "y" = 54, "height"=8, "width"=8)
-        
+        Furniture("x" = 33, "y" = 54, "height"=8, "width"=8)       
     }
+    
     Room("x" = 950, "y" = 550, "height"=150, "width"=250, "id"="lees_dining_area") {}
     Room("x" = 250, "y" = 300, "height"=200, "width"=650, "id"="main_dining_area") {}
     Room("x" = 75, "y" = 0, "height"=75, "width"=200, "name" = "Bathrooms") {}
